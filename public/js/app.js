@@ -447,15 +447,17 @@ async function loadUnassigned() {
                   </span>
                   <span class="operator-assign">
                     <small>Operator:</small>
-                    <select class="inline-select" data-assign-select="${schedule.id}">
-                      ${operatorOptions(schedule.operator_id || '')}
-                    </select>
+                    <div class="operator-select-group">
+                      <select class="inline-select" data-assign-select="${schedule.id}">
+                        ${operatorOptions(schedule.operator_id || '')}
+                      </select>
+                      <button class="icon-action primary save-assign-btn" data-assign-schedule="${schedule.id}" aria-label="Simpan penugasan operator" title="Simpan Operator">&#10003;</button>
+                    </div>
                   </span>
                 </div>
               </div>
               <div class="actions recap-actions">
                 <button class="icon-action" data-edit-schedule="${schedule.id}" aria-label="Edit jadwal" title="Edit">&#9998;</button>
-                <button class="icon-action primary" data-assign-schedule="${schedule.id}" aria-label="Assign operator" title="Assign">&#10003;</button>
                 <button class="icon-action danger" data-delete-schedule="${schedule.id}" aria-label="Hapus jadwal" title="Hapus">&#128465;</button>
               </div>
             </div>
@@ -469,11 +471,7 @@ async function loadUnassigned() {
 
 async function assignOperator(scheduleId) {
   const select = document.querySelector(`[data-assign-select="${scheduleId}"]`);
-  const operatorId = select?.value;
-  if (!operatorId) {
-    showToast('Pilih operator terlebih dahulu.', 'error');
-    return;
-  }
+  const operatorId = select?.value ? Number(select.value) : null;
 
   try {
     const result = await request(`/api/schedules/${scheduleId}/operator`, {
