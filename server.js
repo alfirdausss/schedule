@@ -5,15 +5,29 @@ const db = require('./config/db');
 const operatorRoutes = require('./routes/operators');
 const scheduleRoutes = require('./routes/schedules');
 
+const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const viewsPath = [
+  path.join(__dirname, 'views'),
+  path.join(process.cwd(), 'views'),
+  path.join(__dirname, '..', 'views')
+].find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'views');
+
+const publicPath = [
+  path.join(__dirname, 'public'),
+  path.join(process.cwd(), 'public'),
+  path.join(__dirname, '..', 'public')
+].find((dir) => fs.existsSync(dir)) || path.join(process.cwd(), 'public');
+
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', viewsPath);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(publicPath));
 
 app.get('/', (req, res) => {
   res.render('index', {

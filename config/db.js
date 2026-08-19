@@ -6,8 +6,13 @@ let dbPath = process.env.DB_FILE;
 if (!dbPath) {
   if (process.env.VERCEL) {
     dbPath = path.join('/tmp', 'jadwal.sqlite');
-    const localSeed = path.join(__dirname, '..', 'jadwal.sqlite');
-    if (!fs.existsSync(dbPath) && fs.existsSync(localSeed)) {
+    const localSeed = [
+      path.join(__dirname, '..', 'jadwal.sqlite'),
+      path.join(process.cwd(), 'jadwal.sqlite'),
+      path.join(__dirname, 'jadwal.sqlite')
+    ].find((p) => fs.existsSync(p));
+
+    if (!fs.existsSync(dbPath) && localSeed) {
       try {
         fs.copyFileSync(localSeed, dbPath);
       } catch (_) {}
