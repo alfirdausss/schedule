@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const initSqlJs = require('sql.js');
+const initSqlJs = require('sql.js/dist/sql-asm.js');
 
 let dbPath = process.env.DB_FILE;
 if (!dbPath) {
