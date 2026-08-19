@@ -1,0 +1,26 @@
+{
+  "name": "alfacom-production-jadwal",
+  "version": "1.0.0",
+  "description": "Aplikasi lokal ALFACOM PRODUCTION untuk jadwal dan rekap penugasan operator.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "alfacom",
+    "jadwal",
+    "operator",
+    "express",
+    "sqlite"
+  ],
+  "author": "ALFACOM PRODUCTION",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "html2canvas": "^1.4.1",
+    "sqlite3": "^6.0.1"
+  }
+}

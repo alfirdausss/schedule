@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#121212">
+  <title><%= appTitle %> | Jadwal Operator</title>
+  <link rel="stylesheet" href="/css/styles.css?v=20260820-26">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-block">
+        <img src="/assets/logo.png" alt="Logo ALFACOM PRODUCTION" class="brand-logo">
+        <div class="brand-copy">
+          <h1><%= appTitle %></h1>
+          <p><%= subAppName %></p>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Kecilkan sidebar" title="Kecilkan sidebar">&#8249;</button>
+      </div>
+
+      <nav class="nav-menu" aria-label="Menu aplikasi">
+        <button class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">&#8962;</span>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-section="operators">
+          <span class="nav-icon">&#9673;</span>
+          <span>List Operator</span>
+        </button>
+        <button class="nav-item" data-section="schedule-form">
+          <span class="nav-icon">+</span>
+          <span>Isi Jadwal</span>
+        </button>
+        <button class="nav-item" data-section="recap">
+          <span class="nav-icon">&#9638;</span>
+          <span>Rekap Jadwal</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <span>Local App</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Buka menu">&#9776;</button>
+        <div class="topbar-brand">
+          <img src="/assets/logo.png" alt="Logo ALFACOM PRODUCTION" class="topbar-logo">
+          <p class="eyebrow">ALFACOM PRODUCTION</p>
+        </div>
+        <div class="topbar-meta">
+          <span id="todayLabel"></span>
+        </div>
+      </header>
+
+      <section class="content-section active" id="dashboard">
+        <div class="hero-panel">
+          <div>
+            <span class="hero-kicker">Production Scheduling</span>
+            <h3>Jadwal Operator & Rekap Penugasan</h3>
+            <p>Kelola operator, isi penugasan acara, dan ekspor rekap bulanan dalam satu dashboard lokal.</p>
+          </div>
+          <img src="/assets/logo.png" alt="" class="hero-logo" aria-hidden="true">
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Total Operator</span>
+            <strong id="statOperators">0</strong>
+            <small>Operator terdaftar</small>
+          </article>
+          <article class="stat-card">
+            <span>Jadwal Bulan Ini</span>
+            <strong id="statSchedules">0</strong>
+            <small>Acara terjadwal</small>
+          </article>
+          <article class="stat-card">
+            <span>Belum Assigned</span>
+            <strong id="statUnassigned">0</strong>
+            <small>Perlu operator</small>
+          </article>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">Ringkasan</span>
+              <h3>Jadwal Terdekat</h3>
+            </div>
+            <button class="btn btn-secondary" data-go="recap">Lihat Rekap</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tanggal</th>
+                  <th>Acara</th>
+                  <th>Waktu</th>
+                  <th>Operator</th>
+                </tr>
+              </thead>
+              <tbody id="dashboardScheduleRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section" id="operators">
+        <div class="section-intro">
+          <span class="section-kicker">Master Data</span>
+          <h3>List Operator</h3>
+          <p>Tambahkan nama operator yang nantinya dapat dipilih pada penugasan jadwal.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">Database</span>
+              <h3>Operator Terdaftar</h3>
+            </div>
+            <div class="panel-actions">
+              <span class="pill" id="operatorCount">0 operator</span>
+              <button class="btn btn-primary" id="openOperatorModal">Operator Baru</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nama Operator</th>
+                  <th>WhatsApp</th>
+                  <th class="align-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="operatorRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-section" id="schedule-form">
+        <div class="section-intro">
+          <span class="section-kicker">Penugasan</span>
+          <h3>Isi Jadwal</h3>
+          <p>Masukkan jadwal baru atau assign operator ke jadwal yang belum memiliki petugas.</p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">Kelola Event</span>
+              <h3>Semua Jadwal Bulan Ini</h3>
+            </div>
+            <div class="panel-actions">
+              <label class="compact-filter">
+                Bulan
+                <input type="month" id="manageMonth">
+              </label>
+              <span class="pill warning" id="unassignedCount">0 jadwal</span>
+              <button class="btn btn-primary" id="openScheduleModal">Jadwal Baru</button>
+            </div>
+          </div>
+          <div class="recap-card-list schedule-card-list" id="unassignedCards"></div>
+        </div>
+      </section>
+
+      <section class="content-section" id="recap">
+        <div class="section-intro recap-intro">
+          <div>
+            <span class="section-kicker">Laporan</span>
+            <h3>Rekap Jadwal Per Bulan</h3>
+            <p>Pilih bulan, cek penugasan, lalu ekspor rekap ke JPG untuk laporan.</p>
+          </div>
+          <div class="recap-controls">
+            <label>
+              Bulan
+              <input type="month" id="recapMonth">
+            </label>
+            <button class="btn btn-primary" id="exportJpg">Preview JPG</button>
+          </div>
+        </div>
+
+        <div class="export-sheet" id="exportArea">
+          <div class="export-header">
+            <div class="export-brand">
+              <img src="/assets/logo.png" alt="Logo ALFACOM PRODUCTION">
+              <div>
+                <strong>ALFACOM PRODUCTION</strong>
+                <span>Jadwal Operator & Rekap Penugasan</span>
+              </div>
+            </div>
+            <div class="export-period">
+              <span>PERIODE</span>
+              <strong id="exportPeriodLabel">-</strong>
+            </div>
+          </div>
+
+          <div class="recap-card-list" id="recapCards"></div>
+
+          <div class="export-footer">
+            <span>ALFACOM PRODUCTION</span>
+            <span id="exportGeneratedAt"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div class="modal-backdrop" id="scheduleModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Jadwal Baru</span>
+          <h3 id="scheduleModalTitle">Tambah Jadwal</h3>
+        </div>
+        <button class="icon-btn" id="closeScheduleModal" aria-label="Tutup">&times;</button>
+      </div>
+      <form id="scheduleForm" class="form-stack">
+        <label>
+          Tanggal
+          <input type="date" id="scheduleDate" name="tanggal" required>
+        </label>
+        <label>
+          Keterangan Acara
+          <textarea id="scheduleDescription" name="keterangan_acara" rows="3" placeholder="Contoh: 4x2m mas fadil dp500" required></textarea>
+        </label>
+        <label>
+          Estimasi Jam
+          <input type="text" id="scheduleTime" name="estimasi_jam" placeholder="Contoh: MALAM / PAGI-MALAM / TBD" required>
+        </label>
+        <label>
+          Nama Operator
+          <select id="scheduleOperator" name="operator_id">
+            <option value="">Belum ditentukan</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="reset" class="btn btn-secondary">Reset</button>
+          <button type="submit" class="btn btn-primary">Simpan Jadwal</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="operatorModal" aria-hidden="true">
+    <div class="modal-card compact-modal" role="dialog" aria-modal="true" aria-labelledby="operatorModalTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Operator Baru</span>
+          <h3 id="operatorModalTitle">Tambah Operator</h3>
+        </div>
+        <button class="icon-btn" id="closeOperatorModal" aria-label="Tutup">&times;</button>
+      </div>
+      <form id="operatorForm" class="form-stack">
+        <label>
+          Nama Operator
+          <input type="text" id="operatorName" name="nama" maxlength="100" placeholder="Contoh: Fadil" required>
+        </label>
+        <label>
+          Nomor WA
+          <input type="tel" id="operatorWa" name="nomor_wa" maxlength="20" inputmode="tel" placeholder="Contoh: 081234567890">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelOperatorModal">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Operator</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="editModal" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Edit</span>
+          <h3 id="editModalTitle">Ubah Jadwal</h3>
+        </div>
+        <button class="icon-btn" id="closeEditModal" aria-label="Tutup">&times;</button>
+      </div>
+      <form id="editScheduleForm" class="form-stack">
+        <input type="hidden" id="editScheduleId">
+        <label>
+          Tanggal
+          <input type="date" id="editScheduleDate" required>
+        </label>
+        <label>
+          Keterangan Acara
+          <textarea id="editScheduleDescription" rows="3" required></textarea>
+        </label>
+        <label>
+          Estimasi Jam
+          <input type="text" id="editScheduleTime" required>
+        </label>
+        <label>
+          Operator
+          <select id="editScheduleOperator">
+            <option value="">Belum ditentukan</option>
+          </select>
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelEdit">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="operatorEditModal" aria-hidden="true">
+    <div class="modal-card compact-modal" role="dialog" aria-modal="true" aria-labelledby="operatorEditTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Edit</span>
+          <h3 id="operatorEditTitle">Ubah Operator</h3>
+        </div>
+        <button class="icon-btn" id="closeOperatorEditModal" aria-label="Tutup">&times;</button>
+      </div>
+      <form id="operatorEditForm" class="form-stack">
+        <input type="hidden" id="editOperatorId">
+        <label>
+          Nama Operator
+          <input type="text" id="editOperatorName" maxlength="100" required>
+        </label>
+        <label>
+          Nomor WA
+          <input type="tel" id="editOperatorWa" maxlength="20" inputmode="tel" placeholder="Contoh: 081234567890">
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="cancelOperatorEdit">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="confirmModal" aria-hidden="true">
+    <div class="modal-card confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker" id="confirmKicker">Konfirmasi</span>
+          <h3 id="confirmTitle">Hapus Data</h3>
+        </div>
+        <button class="icon-btn" id="closeConfirmModal" aria-label="Tutup">&times;</button>
+      </div>
+      <div class="confirm-body">
+        <p id="confirmMessage"></p>
+      </div>
+      <div class="modal-actions confirm-actions">
+        <button type="button" class="btn btn-secondary" id="cancelConfirm">Batal</button>
+        <button type="button" class="btn btn-danger" id="confirmAction">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop preview-backdrop" id="exportPreviewModal" aria-hidden="true">
+    <div class="modal-card preview-card" role="dialog" aria-modal="true" aria-labelledby="exportPreviewTitle">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Preview</span>
+          <h3 id="exportPreviewTitle">Rekap JPG</h3>
+        </div>
+        <button class="icon-btn" id="closePreviewModal" aria-label="Tutup">&times;</button>
+      </div>
+      <div class="preview-body">
+        <img id="exportPreviewImage" alt="Preview rekap jadwal">
+      </div>
+      <div class="modal-actions preview-actions">
+        <button type="button" class="btn btn-secondary" id="cancelPreview">Batal</button>
+        <button type="button" class="btn btn-primary" id="downloadPreview">Download JPG</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/vendor/html2canvas/html2canvas.min.js"></script>
+  <script src="/js/app.js?v=20260820-15"></script>
+</body>
+</html>
+
