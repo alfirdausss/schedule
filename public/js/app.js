@@ -441,11 +441,13 @@ async function loadUnassigned() {
                   <button class="mobile-action-toggle" type="button" data-toggle-schedule-actions="${schedule.id}" aria-label="Buka aksi jadwal" aria-expanded="false">&#8942;</button>
                 </div>
                 <div class="recap-schedule-meta">
-                  <span class="time-chip">${escapeHtml(uppercaseTime(schedule.estimasi_jam))}</span>
-                  <span class="status-chip ${schedule.operator_id ? 'assigned' : 'unassigned'}">
-                    ${schedule.operator_id ? 'Assigned' : 'Belum Assigned'}
-                  </span>
-                  <span class="operator-assign">
+                  <div class="recap-schedule-chips">
+                    <span class="time-chip">${escapeHtml(uppercaseTime(schedule.estimasi_jam))}</span>
+                    <span class="status-chip ${schedule.operator_id ? 'assigned' : 'unassigned'}">
+                      ${schedule.operator_id ? 'Assigned' : 'Belum Assigned'}
+                    </span>
+                  </div>
+                  <div class="operator-assign">
                     <small>Operator:</small>
                     <div class="operator-select-group">
                       <select class="inline-select" data-assign-select="${schedule.id}">
@@ -453,7 +455,7 @@ async function loadUnassigned() {
                       </select>
                       <button class="icon-action primary save-assign-btn" data-assign-schedule="${schedule.id}" aria-label="Simpan penugasan operator" title="Simpan Operator">&#10003;</button>
                     </div>
-                  </span>
+                  </div>
                 </div>
               </div>
               <div class="actions recap-actions">

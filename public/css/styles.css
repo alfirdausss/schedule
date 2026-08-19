@@ -1112,8 +1112,48 @@ tbody tr:hover td {
   border-color: rgba(236, 38, 143, .35);
 }
 
+.schedule-card-list .recap-schedule-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.recap-schedule-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.schedule-card-list .operator-assign {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+  margin-left: 0;
+}
+
+.schedule-card-list .operator-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
 .schedule-card-list .custom-select {
-  width: 190px;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+}
+
+.schedule-card-list .custom-select-button {
+  min-height: 40px;
+  padding: 10px 38px 10px 14px;
 }
 
 .schedule-card-list .recap-day-card,
