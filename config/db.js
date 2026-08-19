@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const sqlite3 = require('sqlite3').verbose();
+const initSqlJs = require('sql.js');
 
 let dbPath = process.env.DB_FILE;
 if (!dbPath) {
@@ -21,8 +21,6 @@ if (!dbPath) {
     dbPath = path.join(__dirname, '..', 'jadwal.sqlite');
   }
 }
-
-const db = new sqlite3.Database(dbPath);
 
 const seedSchedules = [
   ['2026-08-22', '4x2m mas fadil dp500', 'Malam'],
@@ -46,73 +44,86 @@ const seedSchedules = [
   ['2026-08-30', 'pak man 24m', 'TBD'],
 ];
 
-const initialized = new Promise((resolve, reject) => {
-  db.serialize(() => {
-    db.run('PRAGMA foreign_keys = ON');
+let dbInstance = null;
 
-    db.run(`
+function saveDbToFile() {
+  if (!dbInstance) return;
+  try {
+    const data = dbInstance.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(dbPath, buffer);
+  } catch (err) {
+    console.error('[DATABASE] Gagal menyimpan ke file:', err.message);
+  }
+}
+
+const initialized = (async () => {
+  const SQL = await initSqlJs();
+  let buffer = null;
+  if (fs.existsSync(dbPath)) {
+    try {
+      buffer = fs.readFileSync(dbPath);
+    } catch (_) {}
+  }
+
+  dbInstance = buffer ? new SQL.Database(buffer) : new SQL.Database();
+  dbInstance.run('PRAGMA foreign_keys = ON;');
+
+  dbInstance.run(`
     CREATE TABLE IF NOT EXISTS operators (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nama TEXT NOT NULL UNIQUE,
       nomor_wa TEXT NULL
-    )
+    );
+  `);
+
+  try {
+    dbInstance.run('ALTER TABLE operators ADD COLUMN nomor_wa TEXT NULL;');
+  } catch (_) {}
+
+  dbInstance.run(`
+    CREATE TABLE IF NOT EXISTS schedules (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tanggal TEXT NOT NULL,
+      keterangan_acara TEXT NOT NULL,
+      estimasi_jam TEXT NOT NULL,
+      operator_id INTEGER NULL,
+      FOREIGN KEY (operator_id) REFERENCES operators(id)
+        ON UPDATE CASCADE
+        ON DELETE SET NULL
+    );
+  `);
+
+  dbInstance.run('CREATE INDEX IF NOT EXISTS idx_schedules_tanggal ON schedules(tanggal);');
+  dbInstance.run('CREATE INDEX IF NOT EXISTS idx_schedules_operator ON schedules(operator_id);');
+
+  const countRes = dbInstance.exec('SELECT COUNT(*) AS total FROM schedules');
+  const total = countRes.length && countRes[0].values.length ? countRes[0].values[0][0] : 0;
+
+  if (total === 0) {
+    const stmt = dbInstance.prepare(`
+      INSERT INTO schedules (tanggal, keterangan_acara, estimasi_jam)
+      VALUES (?, ?, ?)
     `);
-
-    db.run('ALTER TABLE operators ADD COLUMN nomor_wa TEXT NULL', [], (err) => {
-      if (err && !/duplicate column name/i.test(err.message)) {
-        reject(err);
-      }
-
-      db.run(`
-      CREATE TABLE IF NOT EXISTS schedules (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tanggal TEXT NOT NULL,
-        keterangan_acara TEXT NOT NULL,
-        estimasi_jam TEXT NOT NULL,
-        operator_id INTEGER NULL,
-        FOREIGN KEY (operator_id) REFERENCES operators(id)
-          ON UPDATE CASCADE
-          ON DELETE SET NULL
-      )
-      `);
-
-      db.run('CREATE INDEX IF NOT EXISTS idx_schedules_tanggal ON schedules(tanggal)');
-      db.run('CREATE INDEX IF NOT EXISTS idx_schedules_operator ON schedules(operator_id)');
-
-      db.get('SELECT COUNT(*) AS total FROM schedules', (err, row) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        if (row.total > 0) {
-          resolve();
-          return;
-        }
-
-        const stmt = db.prepare(`
-        INSERT INTO schedules (tanggal, keterangan_acara, estimasi_jam)
-        VALUES (?, ?, ?)
-        `);
-
-        seedSchedules.forEach((schedule) => stmt.run(schedule));
-        stmt.finalize((finalizeErr) => {
-          if (finalizeErr) {
-            reject(finalizeErr);
-            return;
-          }
-          resolve();
-        });
-      });
+    seedSchedules.forEach((row) => {
+      stmt.run(row);
     });
-  });
-});
+    stmt.free();
+  }
+
+  saveDbToFile();
+  return dbInstance;
+})();
 
 function normalizeError(err) {
-  if (err && err.code === 'SQLITE_CONSTRAINT') {
-    err.code = 'ER_DUP_ENTRY';
+  if (!err) return null;
+  const msg = String(err.message || err);
+  if (/unique|constraint/i.test(msg)) {
+    const normalized = new Error(msg);
+    normalized.code = 'ER_DUP_ENTRY';
+    return normalized;
   }
-  return err;
+  return err instanceof Error ? err : new Error(msg);
 }
 
 function query(sql, params, callback) {
@@ -120,30 +131,54 @@ function query(sql, params, callback) {
     callback = params;
     params = [];
   }
-
-  const trimmedSql = sql.trim();
-  const command = trimmedSql.split(/\s+/, 1)[0].toUpperCase();
-
-  if (command === 'SELECT') {
-    return initialized.then(() => db.all(sql, params, (err, rows) => {
-      callback(normalizeError(err), rows);
-    }));
+  if (typeof callback !== 'function') {
+    callback = () => {};
   }
 
-  return initialized.then(() => db.run(sql, params, function runCallback(err) {
-    callback(normalizeError(err), {
-      insertId: this.lastID,
-      affectedRows: this.changes,
-    });
-  }));
+  initialized.then((db) => {
+    try {
+      const trimmedSql = sql.trim();
+      const command = trimmedSql.split(/\s+/, 1)[0].toUpperCase();
+
+      if (command === 'SELECT') {
+        const stmt = db.prepare(trimmedSql);
+        if (params && params.length) {
+          stmt.bind(params);
+        }
+        const rows = [];
+        while (stmt.step()) {
+          rows.push(stmt.getAsObject());
+        }
+        stmt.free();
+        return callback(null, rows);
+      }
+
+      // INSERT, UPDATE, DELETE
+      db.run(trimmedSql, params);
+      const changesRes = db.exec('SELECT changes() AS affected, last_insert_rowid() AS id');
+      const affectedRows = changesRes[0]?.values[0]?.[0] ?? 0;
+      const insertId = changesRes[0]?.values[0]?.[1] ?? 0;
+
+      saveDbToFile();
+
+      callback(null, {
+        insertId,
+        affectedRows,
+      });
+    } catch (err) {
+      callback(normalizeError(err));
+    }
+  }).catch((initErr) => {
+    callback(normalizeError(initErr));
+  });
 }
 
 function getConnection(callback) {
-  initialized.then(() => db.get('SELECT 1', (err) => {
-    callback(normalizeError(err), {
+  initialized.then(() => {
+    callback(null, {
       release() {},
     });
-  })).catch(callback);
+  }).catch(callback);
 }
 
 module.exports = {
